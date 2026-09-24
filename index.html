@@ -40,6 +40,8 @@
   .axdefs b{color:var(--ink); font-weight:500;}
   .pbtn{display:block; width:100%; text-align:left; background:#fff; border:1px solid var(--rule); border-radius:8px; padding:10px 14px; margin-top:8px; cursor:pointer; font-family:var(--sans);}
   .pbtn:hover{border-color:var(--ink);}
+  .pbtn.active{border-color:var(--tilts); box-shadow:0 0 0 2px var(--tilts); background:#F0F5F1;}
+  .pbtn.active > b::after{content:"  ✓ selected"; color:var(--tilts); font-size:12px; font-weight:600;}
   .pbtn b{font-size:14px; display:block; color:var(--ink);}
   .pbtn span{font-size:12.5px; color:var(--muted); display:block; margin-top:1px;}
   .pbtn i{display:block; font-size:11px; color:#8A8F89; font-style:normal; margin-top:3px;}
@@ -519,12 +521,22 @@
     const axes = AXES.map(a=>'<span class="pax"><b>'+a.label+'</b><i><s style="width:'+(100*a.val(P))+'%; background:'+a.color+'"></s></i></span>').join('');
     b.innerHTML = '<b>'+P.name+'</b><span>'+P.desc+'</span><div class="paxes">'+axes+'</div>';
     b.addEventListener('click', ()=>{
+      if(activePersona === key){                 // click the selected card again to un-select
+        b.classList.remove('active');
+        activePersona = null;
+        $('pbox').style.display='none';
+        render();
+        return;
+      }
+      btnWrap.querySelectorAll('.pbtn').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
       activePersona = key;
       for(const k of ['p','c','u','tn','tt']) binds[k](P.vals[k]);
       $('pbox').style.display='block';
       $('pbox').innerHTML = 'Starting point: <b>'+P.name+'</b>. Loaded: credence '+P.vals.p+'%, Calls '+P.vals.c+'× / Puts '+P.vals.u+'× / Tilts '+P.vals.tn+'×–'+P.vals.tt+'×. Move anything; amber flags coherence, never blocks.'+
         '<span class="clearlink" id="pclear">clear anchor</span>';
       $('pclear').addEventListener('click', ()=>{
+        btnWrap.querySelectorAll('.pbtn').forEach(x=>x.classList.remove('active'));
         activePersona = null;
         $('pbox').style.display='none';
         render();
