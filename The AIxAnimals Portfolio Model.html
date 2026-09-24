@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The AIxAnimals Portfolio Model — v4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    box-sizing:border-box; padding-top:env(safe-area-inset-top, 0px); padding-bottom:env(safe-area-inset-bottom, 0px);
+    --bg:#F7F8F6; --ink:#1F2420; --muted:#68706A; --rule:#D9DDD5; --amber:#B07A10; --amberbg:#FBF3E1;
+    --core:#46608C; --tilts:#2F7A5B; --calls:#C4880F; --puts:#7D5B8A;
+    --serif:'Spectral', Georgia, serif;
+    --sans:'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-padding-top:env(safe-area-inset-top, 0px);}
+  body{background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:15px; line-height:1.55;}
+  .wrap{max-width:860px; margin:0 auto; padding:48px 22px 90px;}
+  h1{font-family:var(--serif); font-weight:600; font-size:clamp(28px,4.5vw,40px); line-height:1.12; letter-spacing:-0.01em;}
+  .lede{font-family:var(--serif); font-size:17px; color:var(--muted); max-width:56ch; margin-top:12px;}
+  section{border-top:1px solid var(--rule); margin-top:36px; padding-top:24px;}
+  h2{font-family:var(--serif); font-weight:600; font-size:21px; margin-bottom:4px;}
+  .whose{font-size:13px; color:var(--muted); margin-bottom:16px; max-width:64ch;}
+  a{color:var(--core);}
+
+  .legend{display:flex; flex-wrap:wrap; gap:12px 22px; margin-top:16px; font-size:13px; color:var(--muted);}
+  .legend span{display:inline-flex; align-items:center; gap:7px;}
+  .dot{width:10px; height:10px; border-radius:50%; display:inline-block; flex:0 0 auto;}
+
+  .allocbar{display:flex; width:100%; height:70px; border-radius:6px; overflow:hidden;}
+  .seg{display:flex; flex-direction:column; justify-content:center; padding:0 12px; color:#fff; min-width:0; transition:width .35s ease;}
+  .seg .nm{font-weight:600; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .seg .pc{font-size:18px; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap;}
+  .seg.tiny .nm{display:none;}
+  @media (prefers-reduced-motion: reduce){ .seg{transition:none;} }
+
+  .axdefs{font-size:12px; color:var(--muted); max-width:70ch; margin:-6px 0 14px; line-height:1.6;}
+  .axdefs b{color:var(--ink); font-weight:500;}
+  .pbtn{display:block; width:100%; text-align:left; background:#fff; border:1px solid var(--rule); border-radius:8px; padding:10px 14px; margin-top:8px; cursor:pointer; font-family:var(--sans);}
+  .pbtn:hover{border-color:var(--ink);}
+  .pbtn b{font-size:14px; display:block; color:var(--ink);}
+  .pbtn span{font-size:12.5px; color:var(--muted); display:block; margin-top:1px;}
+  .pbtn i{display:block; font-size:11px; color:#8A8F89; font-style:normal; margin-top:3px;}
+  .paxes{display:flex; gap:16px; margin-top:7px; flex-wrap:wrap;}
+  .pax{font-size:10.5px; color:#8A8F89;}
+  .pax b{display:block; font-weight:500; font-size:10.5px; color:#8A8F89;}
+  .pax i{display:block; width:70px; height:5px; background:#E7EAE4; border-radius:3px; position:relative; font-style:normal; margin-top:3px; overflow:hidden;}
+  .pax i s{position:absolute; left:0; top:0; bottom:0; border-radius:3px; text-decoration:none; display:block;}
+  .personabox{margin-top:12px; font-size:13.5px; padding:10px 12px; border-left:3px solid var(--tilts); background:#F0F5F1; display:none;}
+  .clearlink{color:var(--muted); font-size:12.5px; text-decoration:underline; cursor:pointer; margin-left:8px;}
+
+  .row{display:grid; grid-template-columns:minmax(180px,1fr) minmax(140px,220px) 92px; gap:10px 18px; align-items:center; padding:12px 0; border-bottom:1px dashed var(--rule);}
+  .row.flagged{border-left:3px solid var(--amber); padding-left:10px; background:var(--amberbg);}
+  .row label{font-size:14.5px;}
+  .row label small{display:block; color:var(--muted); font-size:12.5px; font-weight:400; margin-top:1px;}
+  .rangenote{grid-column:1 / -1; font-size:12.5px; color:var(--amber); display:none;}
+  input[type=range]{width:100%; accent-color:var(--ink); height:22px;}
+  .val{display:flex; align-items:center; gap:4px; justify-content:flex-end;}
+  .val input{width:70px; padding:5px 7px; border:1px solid var(--rule); border-radius:5px; background:#fff; font-family:var(--sans); font-size:14px; text-align:right; font-variant-numeric:tabular-nums; color:var(--ink);}
+  .val input:focus{outline:2px solid var(--core); outline-offset:1px; border-color:transparent;}
+  .unit{color:var(--muted); font-size:13px; width:14px;}
+  @media (max-width:560px){ .row{grid-template-columns:1fr 84px;} .row input[type=range]{grid-column:1 / -1; order:3;} }
+
+  details.flag{grid-column:1 / -1; margin-top:2px;}
+  details.flag summary{font-size:12px; color:var(--muted); cursor:pointer; user-select:none;}
+  details.flag summary:hover{color:var(--ink);}
+  details.flag p{font-size:12.5px; color:var(--muted); max-width:66ch; padding:6px 0 2px;}
+  details.adv{margin-top:6px;}
+  details.adv > summary{cursor:pointer; font-size:14px; color:var(--muted); padding:8px 0; user-select:none;}
+  details.adv > summary:hover{color:var(--ink);}
+  .advnote{font-size:13px; color:var(--muted); max-width:66ch; margin:8px 0 12px;}
+
+  .curwrap{display:flex; gap:20px; align-items:flex-start; padding:8px 0 18px; border-bottom:1px dashed var(--rule);}
+  .curpie{width:64px; height:64px; border-radius:50%; flex:0 0 auto; margin-top:4px; border:1px solid var(--rule);}
+  .curcells{display:grid; grid-template-columns:repeat(auto-fit, minmax(170px, 1fr)); gap:10px 18px; flex:1;}
+  .curcell{font-size:13px;}
+  .curcell .cname{display:flex; align-items:center; gap:7px; font-weight:500;}
+  .curcell input{width:60px; padding:4px 7px; border:1px solid var(--rule); border-radius:5px; background:#fff; font-family:var(--sans); font-size:14px; text-align:right; font-variant-numeric:tabular-nums; margin:4px 0 2px;}
+  .curcell small{display:block; color:var(--muted); font-size:11.5px; line-height:1.4;}
+
+  .warnings{margin-top:12px;}
+  .warn{font-size:13px; color:var(--amber); background:var(--amberbg); border-left:3px solid var(--amber); padding:8px 12px; margin-top:8px; max-width:70ch;}
+
+  .lbl{font-size:13px; color:var(--muted); margin:14px 0 6px;}
+  .thinbar{display:flex; height:38px; border-radius:5px; overflow:hidden;}
+  .thinbar .seg{padding:0 8px;}
+  .thinbar .seg .pc{font-size:12.5px; font-weight:600;}
+  .midbar{display:flex; height:48px; border-radius:5px; overflow:hidden; margin-top:8px;}
+  .midbar .seg .pc{font-size:14px;}
+
+  .tornado{margin-top:14px;}
+  .trow{display:grid; grid-template-columns:minmax(150px, 260px) 1fr 70px; gap:12px; align-items:center; padding:6px 0; font-size:13.5px;}
+  .tbar{height:14px; background:var(--rule); border-radius:3px; position:relative; overflow:hidden;}
+  .tbar i{position:absolute; left:0; top:0; bottom:0; background:var(--calls); border-radius:3px; display:block;}
+  .tval{text-align:right; font-variant-numeric:tabular-nums; color:var(--muted);}
+  .verdict{font-family:var(--serif); font-size:16px; margin-top:16px; padding-left:14px; border-left:3px solid var(--calls); max-width:60ch;}
+  .marginal-note{font-family:var(--serif); font-size:16px; margin-top:14px; padding-left:14px; border-left:3px solid var(--core); max-width:60ch;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>The AIxAnimals Portfolio Model</h1>
+  <p class="lede">A few numbers about your worldview, combined with estimates about the field, decide where each marginal dollar does the most good.</p>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--core)"></i>Blue Chips — pay off in every trajectory</span>
+    <span><i class="dot" style="background:var(--tilts)"></i>Tilts — Blue-Chip-level now, better if transformative</span>
+    <span><i class="dot" style="background:var(--calls)"></i>Calls — pay off if AI goes transformative</span>
+    <span><i class="dot" style="background:var(--puts)"></i>Puts — pay off if AI stays normal</span>
+  </div>
+
+  <section>
+    <h2>Start from a worldview</h2>
+    <p class="whose">"Transformative AI" carries its usual meaning; the window is ~10 years. The bars on each card:</p>
+    <div class="axdefs"><b>Credence</b> — chance of transformative AI within ~10 years. <b>Leverage if it comes</b> — what a dedicated AI-transition dollar achieves for animals in a transformed world. <b>Today's playbook</b> — the edge of normalcy-dependent proven work over robust baseline, if the world stays normal. <b>Upside without bets</b> — how much of the transformative upside no-regret work captures.</div>
+    <div id="personabtns"></div>
+    <div class="personabox" id="pbox"></div>
+  </section>
+
+  <section>
+    <h2>Your worldview</h2>
+    <p class="whose">All payoffs are relative to one marginal Blue-Chip dollar in the same world (Blue Chips = 1× everywhere). Amber = outside your selected worldview's typical range — a coherence flag, not a correction.</p>
+
+    <div class="row" id="p_row">
+      <label>Chance AI goes transformative<small>within ~10 years</small></label>
+      <input type="range" id="p_r" min="1" max="99" step="1">
+      <span class="val"><input type="text" id="p_v" inputmode="decimal" aria-label="probability percent"><span class="unit">%</span></span>
+      <span class="rangenote" id="p_note"></span>
+      <details class="flag"><summary>Relation to other answers</summary>
+        <p>Your credence and your Calls payoff share a hidden variable: how radical a transformation you imagine. If you set Calls very high, check this credence refers to the same deep scenario.</p>
+      </details>
+    </div>
+    <div class="row" id="c_row">
+      <label>Calls vs. Blue Chips, <em>if</em> transformative<small>marginal dollar, in that world — not the stakes of the scenario</small></label>
+      <input type="range" id="c_r" min="1" max="100" step="0.5">
+      <span class="val"><input type="text" id="c_v" inputmode="decimal" aria-label="calls multiplier"><span class="unit">×</span></span>
+      <span class="rangenote" id="c_note"></span>
+      <details class="flag"><summary>Relation to other answers</summary>
+        <p>This is high partly <em>because</em> the Calls field is empty — raising the Calls halving point too may count the same neglectedness twice. And Calls must beat Tilts in the transformative world, or the category collapses.</p>
+      </details>
+    </div>
+    <div class="row" id="u_row">
+      <label>Puts vs. Blue Chips, <em>if</em> AI stays normal<small>proven interventions in the world they were built for</small></label>
+      <input type="range" id="u_r" min="0.5" max="15" step="0.1">
+      <span class="val"><input type="text" id="u_v" inputmode="decimal" aria-label="puts multiplier"><span class="unit">×</span></span>
+      <span class="rangenote" id="u_note"></span>
+    </div>
+    <div class="row" id="tn_row">
+      <label>Tilts vs. Blue Chips, <em>if</em> AI stays normal<small>the no-regret floor</small></label>
+      <input type="range" id="tn_r" min="0.5" max="5" step="0.1">
+      <span class="val"><input type="text" id="tn_v" inputmode="decimal" aria-label="tilts multiplier normal world"><span class="unit">×</span></span>
+      <span class="rangenote" id="tn_note"></span>
+    </div>
+    <div class="row" id="tt_row">
+      <label>Tilts vs. Blue Chips, <em>if</em> transformative<small>the same bets, upgraded by the transformative world</small></label>
+      <input type="range" id="tt_r" min="0.5" max="30" step="0.5">
+      <span class="val"><input type="text" id="tt_v" inputmode="decimal" aria-label="tilts multiplier transformative world"><span class="unit">×</span></span>
+      <span class="rangenote" id="tt_note"></span>
+      <details class="flag"><summary>Relation to other answers</summary>
+        <p>The gap to Calls-if-transformative is the price of the no-regret property. If this approaches your Calls number, you're saying most AI upside needs no dedicated bets — coherent, but own it.</p>
+      </details>
+    </div>
+    <div class="warnings" id="warnings"></div>
+  </section>
+
+  <section>
+    <h2>Field estimates</h2>
+    <p class="whose">Empirical estimates about the field. Disputing these is a different disagreement than the worldview above.</p>
+
+    <div class="row" style="grid-template-columns:1fr; border-bottom:none; padding-bottom:2px;">
+      <label>Current movement portfolio (%)<small>edit any share — the other three rebalance to keep the total at 100 · <a href="https://docs.google.com/spreadsheets/d/1pmNZ9NayebrmTnf348d14FYh6Q8u9lgzoGWYIduuBrc/edit?usp=sharing" target="_blank" rel="noopener">intervention-by-intervention worksheet to build your own estimate</a></small></label>
+    </div>
+    <div class="curwrap">
+      <div class="curpie" id="curpie" role="img" aria-label="Current portfolio composition"></div>
+      <div class="curcells">
+        <div class="curcell"><span class="cname"><i class="dot" style="background:var(--core)"></i>Blue Chips</span><input id="cur0" inputmode="decimal"><small>movement infrastructure, talent &amp; funding pipelines, policy capacity</small></div>
+        <div class="curcell"><span class="cname"><i class="dot" style="background:var(--tilts)"></i>Tilts</span><input id="cur1" inputmode="decimal"><small>alt-protein &amp; emerging-tech work, AI adoption across the movement</small></div>
+        <div class="curcell"><span class="cname"><i class="dot" style="background:var(--calls)"></i>Calls</span><input id="cur2" inputmode="decimal"><small>animal-inclusive AI alignment &amp; governance, Calls fieldbuilding</small></div>
+        <div class="curcell"><span class="cname"><i class="dot" style="background:var(--puts)"></i>Puts</span><input id="cur3" inputmode="decimal"><small>corporate campaigns, welfare reforms — proven work built for today's world</small></div>
+      </div>
+    </div>
+
+    <details class="adv">
+      <summary>Show the remaining field parameters</summary>
+      <div>
+        <p class="advnote">"Halving point" = the annual spend at which a bucket's marginal value has halved, because the best opportunities get funded first.</p>
+        <div class="row">
+          <label>Calls halving point<small>the field is tiny — single-digit millions move its frontier</small></label>
+          <input type="range" id="hc_r" min="1" max="40" step="0.5">
+          <span class="val"><input type="text" id="hc_v" inputmode="decimal"><span class="unit">$M</span></span>
+        </div>
+        <div class="row">
+          <label>Tilts halving point</label>
+          <input type="range" id="ht_r" min="5" max="120" step="1">
+          <span class="val"><input type="text" id="ht_v" inputmode="decimal"><span class="unit">$M</span></span>
+        </div>
+        <div class="row">
+          <label>Puts halving point</label>
+          <input type="range" id="hu_r" min="5" max="150" step="1">
+          <span class="val"><input type="text" id="hu_v" inputmode="decimal"><span class="unit">$M</span></span>
+        </div>
+        <div class="row">
+          <label>Blue Chips halving point</label>
+          <input type="range" id="hk_r" min="5" max="200" step="1">
+          <span class="val"><input type="text" id="hk_v" inputmode="decimal"><span class="unit">$M</span></span>
+        </div>
+        <div class="row" id="cn_row">
+          <label>Calls value if AI stays normal<small>vs. a Blue-Chip dollar in that world</small></label>
+          <input type="range" id="cn_r" min="0" max="3" step="0.05">
+          <span class="val"><input type="text" id="cn_v" inputmode="decimal"><span class="unit">×</span></span>
+          <span class="rangenote" id="cn_note"></span>
+          <details class="flag"><summary>Relation to your worldview</summary>
+            <p>"Normal" is a residual: every future short of the pinned deep scenario. If you expect that residual to be moderately transformed anyway, raise this — Calls partially pay off there. This cell carries a piece of your worldview.</p>
+          </details>
+        </div>
+        <div class="row" id="ut_row">
+          <label>Puts value if transformative<small>vs. a Blue-Chip dollar in that world — impact partly eroded</small></label>
+          <input type="range" id="ut_r" min="0" max="3" step="0.05">
+          <span class="val"><input type="text" id="ut_v" inputmode="decimal"><span class="unit">×</span></span>
+          <span class="rangenote" id="ut_note"></span>
+        </div>
+        <div class="row">
+          <label>Annual movement budget</label>
+          <input type="range" id="b_r" min="20" max="1000" step="10">
+          <span class="val"><input type="text" id="b_v" inputmode="decimal"><span class="unit">$M</span></span>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <section>
+    <h2>Your portfolio vs. the movement's</h2>
+    <div class="lbl">Your optimal total portfolio, at this budget</div>
+    <div class="allocbar" id="mainbar" role="img" aria-label="Optimal allocation across Blue Chips, Tilts, Calls, Puts"></div>
+    <div class="lbl">Current movement portfolio (estimate)</div>
+    <div class="midbar" id="curbar" style="margin-top:0"></div>
+    <div class="legend" style="margin-top:12px; font-size:12px;">
+      <span><i class="dot" style="background:var(--core)"></i>Blue Chips</span>
+      <span><i class="dot" style="background:var(--tilts)"></i>Tilts</span>
+      <span><i class="dot" style="background:var(--calls)"></i>Calls</span>
+      <span><i class="dot" style="background:var(--puts)"></i>Puts</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Where the next dollars go</h2>
+    <p class="whose">Takes current holdings as given: where does new money do the most good?</p>
+    <div class="row">
+      <label>New money to allocate<small>on top of the current portfolio</small></label>
+      <input type="range" id="n_r" min="1" max="100" step="1">
+      <span class="val"><input type="text" id="n_v" inputmode="decimal" aria-label="new money"><span class="unit">$M</span></span>
+    </div>
+    <div class="midbar" id="margbar" role="img" aria-label="Allocation of new money"></div>
+    <p class="marginal-note" id="margnote"></p>
+  </section>
+
+  <section>
+    <h2>Sensitivity</h2>
+    <p class="whose">How much the Calls share moves per input (±25%; credence ±10 pts). Longest bar = the disagreement worth having. These move one input at a time; the personas above are the joint, coherent complement.</p>
+    <div class="tornado">
+      <div id="tornado"></div>
+      <p class="verdict" id="verdict"></p>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const BUCKETS = ['core','tilts','calls','puts'];
+  const NAMES = {core:'Blue Chips', tilts:'Tilts', calls:'Calls', puts:'Puts'};
+  const COLORS = {core:'#46608C', tilts:'#2F7A5B', calls:'#C4880F', puts:'#7D5B8A'};
+
+  const S = {
+    p: 30, c: 12, u: 2.0, tn: 1.0, tt: 3.0,
+    hc: 8, ht: 35, hu: 45, hk: 60,
+    cn: 0.3, ut: 0.3,
+    b: 300, n: 10,
+    cur: [43,8,1,48]
+  };
+
+  const PERSONAS = {
+    skeptic:  {name:"🧱 AI skeptic", desc:"Deep transformation within a decade is very unlikely; proven advocacy keeps doing the most good.",
+      anchor:"Anchor: mainstream economists (Acemoglu 2024: AI adds ≤0.7% productivity over a decade).",
+      vals:{p:3,c:6,u:2.5,tn:1,tt:2},
+      ranges:{p:[1,8],c:[3,10],u:[2,3.5],tn:[0.8,1.3],tt:[1.5,3]}},
+    median:   {name:"🌤️ Cautious median", desc:"Transformation is possible but not expected; hedge with some AI exposure.",
+      anchor:"Anchor: superforecaster panels (XPT 2022: ~4% on transformative growth by 2070; 2026 panels far faster on capabilities — the gap is diffusion).",
+      vals:{p:15,c:10,u:2,tn:1,tt:3},
+      ranges:{p:[10,25],c:[6,15],u:[1.5,3],tn:[0.8,1.3],tt:[2,4]}},
+    proven:   {name:"🏆 Proven-interventions believer", desc:"Moderate credence; corporate and welfare campaigns beat everything else in a normal world.",
+      anchor:"Credence anchor: AI-researcher surveys (ESPAI 2024: 50% chance of HLMI by 2042, feasibility not adoption), adoption-discounted; the Puts view is the persona's own.",
+      vals:{p:25,c:8,u:4,tn:1,tt:2.5},
+      ranges:{p:[15,35],c:[5,12],u:[3,6],tn:[0.9,1.3],tt:[1.5,3.5]}},
+    wonthelp: {name:"🌊 Transformation-likely, animals-intractable", desc:"Transformation is fairly likely, but advocates can barely shape what happens to animals inside it.",
+      anchor:"Credence between researcher surveys and forecaster communities; the tractability view is the persona's own — no survey measures it.",
+      vals:{p:40,c:2,u:2,tn:1,tt:1.5},
+      ranges:{p:[25,55],c:[1,4],u:[1.5,3],tn:[0.8,1.2],tt:[1,2.5]}},
+    noregret: {name:"🛡️ No-regret maximalist", desc:"Timelines matter less than most think: most of AI's upside for animals is capturable by no-regret work — the case for Tilts without the case for Calls.",
+      anchor:"A strategic posture common among mainstream-org strategists rather than a surveyed population — the least externally anchored card.",
+      vals:{p:40,c:10,u:2,tn:1.3,tt:6},
+      ranges:{p:[25,55],c:[6,15],u:[1.5,3],tn:[1,1.8],tt:[4,9]}},
+    short:    {name:"⚡ Short-timeline believer", desc:"Transformation more likely than not, and capturing its upside needs dedicated early bets.",
+      anchor:"Anchor: forecasting-community medians (AGI late 2020s), diffusion-discounted.",
+      vals:{p:60,c:20,u:1.5,tn:1,tt:4},
+      ranges:{p:[45,70],c:[12,30],u:[1,2.5],tn:[0.8,1.2],tt:[3,6]}},
+    agi:      {name:"🚀 Fully AGI-pilled", desc:"Transformation near-certain, and early movers can shape it; nearly all future impact routes through AI.",
+      anchor:"Anchor: lab leadership timelines (Hassabis 2026: 'a few years'; Amodei: powerful AI ~2026–27) + fast diffusion; high influence mirrors the lab-optimist position.",
+      vals:{p:80,c:30,u:1,tn:1,tt:6},
+      ranges:{p:[65,95],c:[18,40],u:[0.5,1.8],tn:[0.8,1.2],tt:[4,10]}},
+    fatalist: {name:"🌀 Transformation-certain, steering-futile", desc:"Transformation is coming and largely unsteerable; prepare the robust base, hedge nothing on normalcy.",
+      anchor:"Same timeline anchor as above; the futility view mirrors published AI-pessimist positions — the animal translation is authorial.",
+      vals:{p:75,c:2,u:1,tn:1,tt:1.5},
+      ranges:{p:[60,90],c:[1,4],u:[0.5,1.8],tn:[0.8,1.2],tt:[1,2.5]}}
+  };
+  let activePersona = null;
+
+  // ---------- engine ----------
+  function evPerBucket(p, s, cOverride){
+    const P = p/100;
+    const c = (cOverride===undefined)? s.c : cOverride;
+    return {
+      core : 1,
+      tilts: P*s.tt + (1-P)*s.tn,
+      calls: P*c + (1-P)*s.cn,
+      puts : P*s.ut + (1-P)*s.u
+    };
+  }
+  function Hof(s){ return {core:s.hk, tilts:s.ht, calls:s.hc, puts:s.hu}; }
+  function allocateFrom(ev, H, init, budget){
+    const spent = {...init};
+    const added = {core:0, tilts:0, calls:0, puts:0};
+    const step = Math.max(budget/400, 0.02);
+    const n = Math.round(budget/step);
+    for(let i=0;i<n;i++){
+      let best=null, bv=-1;
+      for(const b of BUCKETS){
+        const mv = ev[b] * Math.pow(0.5, spent[b]/Math.max(H[b],0.1));
+        if(mv > bv){ bv = mv; best = b; }
+      }
+      spent[best]+=step; added[best]+=step;
+    }
+    return {spent, added};
+  }
+  function totalAlloc(p, s, cOverride){
+    const ev = evPerBucket(p, s, cOverride);
+    const {spent} = allocateFrom(ev, Hof(s), {core:0,tilts:0,calls:0,puts:0}, s.b);
+    const out={};
+    for(const b of BUCKETS) out[b] = 100*spent[b]/s.b;
+    return {shares:out, spent};
+  }
+  function marginalAlloc(p, s){
+    const ev = evPerBucket(p, s);
+    const init = {core:S.cur[0]*s.b/100, tilts:S.cur[1]*s.b/100, calls:S.cur[2]*s.b/100, puts:S.cur[3]*s.b/100};
+    const {added} = allocateFrom(ev, Hof(s), init, s.n);
+    return added;
+  }
+  function sensitivity(s){
+    const base = totalAlloc(S.p, s).shares.calls;
+    const tests = [
+      {label:'Chance of transformative AI', run:(f)=> totalAlloc(clamp(S.p + f*10, 1, 99), s).shares},
+      {label:'Calls payoff if transformative', run:(f)=> totalAlloc(S.p, {...s, c: S.c*(1+f*0.25)}).shares},
+      {label:'Calls halving point (capacity)', run:(f)=> totalAlloc(S.p, {...s, hc: S.hc*(1+f*0.25)}).shares},
+      {label:'Puts payoff if normal', run:(f)=> totalAlloc(S.p, {...s, u: S.u*(1+f*0.25)}).shares},
+      {label:'Tilts payoffs (both worlds)', run:(f)=> totalAlloc(S.p, {...s, tn: S.tn*(1+f*0.25), tt: S.tt*(1+f*0.25)}).shares},
+    ];
+    return tests.map(t=>{
+      const up = t.run(1).calls, dn = t.run(-1).calls;
+      return {label:t.label, delta: Math.max(Math.abs(up-base), Math.abs(dn-base))};
+    }).sort((a,b)=>b.delta-a.delta);
+  }
+  function clamp(x,a,b){return Math.min(b,Math.max(a,x));}
+  const fmt = x => (Math.round(x*10)/10).toLocaleString('en-US',{minimumFractionDigits:0, maximumFractionDigits:1});
+
+  // ---------- rendering ----------
+  function renderBar(el, shares, showNames){
+    el.innerHTML='';
+    for(const b of BUCKETS){
+      const w = shares[b];
+      if(w<=0.05) continue;
+      const d=document.createElement('div');
+      d.className='seg'+(w<9?' tiny':'');
+      d.style.width=w+'%';
+      d.style.background=COLORS[b];
+      d.innerHTML = (showNames?('<span class="nm">'+NAMES[b]+'</span>'):'') + '<span class="pc">'+fmt(w)+'%</span>';
+      d.title = NAMES[b]+': '+fmt(w)+'%';
+      el.appendChild(d);
+    }
+  }
+
+  const RANGE_KEYS = ['p','c','u','tn','tt'];
+  function checkRanges(){
+    for(const key of RANGE_KEYS){
+      const row = $(key+'_row'), note = $(key+'_note');
+      if(!row || !note) continue;
+      row.classList.remove('flagged'); note.style.display='none';
+      if(activePersona){
+        const [lo,hi] = PERSONAS[activePersona].ranges[key];
+        if(S[key] < lo || S[key] > hi){
+          row.classList.add('flagged');
+          note.textContent = 'Outside the typical range for your selected worldview ('+lo+'–'+hi+') — defensible, but worth flagging explicitly.';
+          note.style.display='block';
+        }
+      }
+    }
+  }
+
+  function checkCoherence(){
+    const w = [];
+    if(S.c <= S.tt) w.push('Calls do not beat Tilts in the transformative world (Calls '+fmt(S.c)+'× ≤ Tilts '+fmt(S.tt)+'×). Tilts then dominate Calls everywhere and the Calls category collapses — or own the conclusion that Calls deserve nothing.');
+    if(S.tt < S.tn) w.push('Tilts are worth less if transformative than if normal — that is a Put-shaped payoff, not a Tilt.');
+    if(S.tt <= 1) w.push('Tilts do not beat the Blue-Chip floor even in the transformative world ('+fmt(S.tt)+'× ≤ 1×). By the framework\'s definition — Good-if-transformative — this is not a Tilt.');
+    if(S.tn < 1) w.push('Tilts pay below the Blue-Chip floor in the normal world ('+fmt(S.tn)+'× < 1×) — the no-regret property that defines Tilts is gone; the payoff is drifting toward Call-shaped.');
+    if(S.u <= 1) w.push('Puts do not beat the Blue-Chip floor even in the normal world ('+fmt(S.u)+'× ≤ 1×). By the framework\'s definition — Good-if-normal — these are not Puts; as set, they would never deserve money.');
+    if(S.ut >= 1) w.push('Puts-if-transformative at '+fmt(S.ut)+'× ≥ 1× holds Blue-Chip value even in the transformed world — the framework calls that an Anti-Tilt. Foldable into Puts, but it no longer hedges anything.');
+    if(S.cn >= 1) w.push('Calls-if-normal ≥ 1× means your Calls have no regret — by definition they are Tilts (the Blue Chips+ fold), and the categories have merged.');
+    $('warnings').innerHTML = w.map(x=>'<div class="warn">'+x+'</div>').join('');
+  }
+
+  function render(){
+    const tot = totalAlloc(S.p, S);
+    renderBar($('mainbar'), tot.shares, true);
+    renderBar($('curbar'), {core:S.cur[0], tilts:S.cur[1], calls:S.cur[2], puts:S.cur[3]}, true);
+
+    const added = marginalAlloc(S.p, S);
+    const margShares = {};
+    for(const b of BUCKETS) margShares[b] = 100*added[b]/S.n;
+    renderBar($('margbar'), margShares, true);
+    const ranked = BUCKETS.slice().sort((a,b)=>added[b]-added[a]);
+    const top = ranked[0];
+    $('margnote').textContent = 'Of the next $'+fmt(S.n)+'M, $'+fmt(added[top])+'M ('+fmt(margShares[top])+'%) goes to '+NAMES[top]+
+      (margShares[top]>90 ? ' — at current holdings, this bucket dominates every marginal dollar until its curve catches up.' :
+       ' — the rest spreads once marginal values equalize.');
+
+    const sens = sensitivity(S);
+    const maxd = Math.max(...sens.map(x=>x.delta), 0.01);
+    $('tornado').innerHTML = sens.map(x=>
+      '<div class="trow"><span>'+x.label+'</span><span class="tbar"><i style="width:'+(100*x.delta/maxd)+'%"></i></span><span class="tval">'+fmt(x.delta)+' pts</span></div>'
+    ).join('');
+    const capRank = sens.findIndex(x=>x.label.includes('capacity'));
+    $('verdict').textContent = capRank===0
+      ? 'Right now, absorptive capacity moves the Calls share more than any belief about AI does — the binding constraint is what the field can absorb. Short-timeline money should build Calls capacity, not just fill it.'
+      : 'Right now, worldview inputs move the Calls share more than capacity does — at these settings, the allocation is genuinely a bet on beliefs about AI.';
+
+    checkRanges();
+    checkCoherence();
+  }
+
+  // ---------- wiring ----------
+  const HARD = {p:[0.1,99.9], c:[0.05,10000], u:[0.05,1000], tn:[0.05,100], tt:[0.05,1000],
+                cn:[0,100], ut:[0,100], hc:[0.5,10000], ht:[0.5,10000], hu:[0.5,10000], hk:[0.5,10000],
+                b:[1,100000], n:[0.1,100000]};
+  const binds = {};
+  function bind(rangeId, valId, key){
+    const r=$(rangeId), v=$(valId);
+    const [hlo,hhi] = HARD[key];
+    const set = (x)=>{
+      x = parseFloat(x);
+      if(isNaN(x)) x = S[key];
+      x = clamp(x, hlo, hhi);
+      S[key]=x;
+      r.value = x;
+      v.value = (''+Math.round(x*100)/100);
+      render();
+    };
+    r.addEventListener('input', ()=>set(r.value));
+    v.addEventListener('change', ()=>set(v.value));
+    r.value=S[key]; v.value=S[key];
+    binds[key] = set;
+  }
+  bind('p_r','p_v','p'); bind('c_r','c_v','c'); bind('u_r','u_v','u'); bind('tn_r','tn_v','tn'); bind('tt_r','tt_v','tt');
+  bind('hc_r','hc_v','hc'); bind('ht_r','ht_v','ht'); bind('hu_r','hu_v','hu'); bind('hk_r','hk_v','hk');
+  bind('cn_r','cn_v','cn'); bind('ut_r','ut_v','ut'); bind('b_r','b_v','b'); bind('n_r','n_v','n');
+
+  // current portfolio: edit one share, the other three rebalance
+  const curEls = [ $('cur0'), $('cur1'), $('cur2'), $('cur3') ];
+  function paintCur(){
+    curEls.forEach((el,i)=>{ el.value = ''+Math.round(S.cur[i]*10)/10; });
+    let acc = 0;
+    const stops = BUCKETS.map((b,i)=>{
+      const from = acc; acc += S.cur[i];
+      return COLORS[b]+' '+from+'% '+acc+'%';
+    }).join(', ');
+    $('curpie').style.background = 'conic-gradient('+stops+')';
+  }
+  function onCurChange(i){
+    let v = parseFloat(curEls[i].value);
+    if(isNaN(v) || v<0) v = 0;
+    v = Math.min(v, 100);
+    const others = [0,1,2,3].filter(j=>j!==i);
+    const rest = others.reduce((a,j)=>a+S.cur[j], 0);
+    if(rest > 0){
+      const f = (100-v)/rest;
+      others.forEach(j=> S.cur[j] *= f);
+    } else {
+      others.forEach(j=> S.cur[j] = (100-v)/3);
+    }
+    S.cur[i] = v;
+    paintCur();
+    render();
+  }
+  curEls.forEach((el,i)=> el.addEventListener('change', ()=>onCurChange(i)));
+  paintCur();
+
+  // persona cards
+  const AXES = [
+    {label:'Credence',              val:P=>P.vals.p/99,             color:'#1F2420'},
+    {label:'Leverage if it comes',  val:P=>Math.min(P.vals.c/30,1), color:COLORS.calls},
+    {label:"Today's playbook",     val:P=>Math.min(P.vals.u/5,1),  color:COLORS.puts},
+    {label:'Upside without bets',   val:P=>Math.min(P.vals.tt/8,1), color:COLORS.tilts},
+  ];
+  const btnWrap = $('personabtns');
+  for(const key in PERSONAS){
+    const P = PERSONAS[key];
+    const b = document.createElement('button');
+    b.className='pbtn';
+    const axes = AXES.map(a=>'<span class="pax"><b>'+a.label+'</b><i><s style="width:'+(100*a.val(P))+'%; background:'+a.color+'"></s></i></span>').join('');
+    b.innerHTML = '<b>'+P.name+'</b><span>'+P.desc+'</span><div class="paxes">'+axes+'</div>';
+    b.addEventListener('click', ()=>{
+      activePersona = key;
+      for(const k of ['p','c','u','tn','tt']) binds[k](P.vals[k]);
+      $('pbox').style.display='block';
+      $('pbox').innerHTML = 'Starting point: <b>'+P.name+'</b>. Loaded: credence '+P.vals.p+'%, Calls '+P.vals.c+'× / Puts '+P.vals.u+'× / Tilts '+P.vals.tn+'×–'+P.vals.tt+'×. Move anything; amber flags coherence, never blocks.'+
+        '<span class="clearlink" id="pclear">clear anchor</span>';
+      $('pclear').addEventListener('click', ()=>{
+        activePersona = null;
+        $('pbox').style.display='none';
+        render();
+      });
+      render();
+    });
+    btnWrap.appendChild(b);
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
